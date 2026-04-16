@@ -5,38 +5,14 @@ const {
   gotoLogin,
   stayOnHomepage,
 } = require('./helpers');
+const {
+  addNewSavedConfiguration,
+  openOperationsCenter,
+  openOperationsCenterApps,
+  selectApplication,
+} = require('./operationsCenter.helpers');
 
 const LOGIN_URL = 'https://dev.aqueralabs.com/home/login';
-
-async function openOperationsCenterApps(page) {
-  const operationsCenterNav = page
-    .getByRole('link', { name: /operations center/i })
-    .or(page.getByRole('button', { name: /operations center/i }))
-    .first();
-
-  await expect(operationsCenterNav).toBeVisible({ timeout: 120000 });
-  await operationsCenterNav.click();
-
-  const appsView = page
-    .getByRole('tab', { name: /^apps$/i })
-    .or(page.getByRole('button', { name: /^apps$/i }))
-    .or(page.getByRole('link', { name: /^apps$/i }))
-    .first();
-
-  await expect(appsView).toBeVisible({ timeout: 120000 });
-  await appsView.click();
-}
-
-async function selectApplication(page, applicationName) {
-  const appLocator = page
-    .getByRole('link', { name: new RegExp(`^${applicationName}$`, 'i') })
-    .or(page.getByRole('button', { name: new RegExp(`^${applicationName}$`, 'i') }))
-    .or(page.getByText(new RegExp(`^${applicationName}$`, 'i')))
-    .first();
-
-  await expect(appLocator).toBeVisible({ timeout: 120000 });
-  await appLocator.click();
-}
 
 test.describe('Aquera login automation', () => {
   test('Saved SSO session lands on Ops Center overview', async ({ page }) => {
@@ -65,5 +41,18 @@ test.describe('Aquera login automation', () => {
         .or(page.getByText(/application connection report/i).first())
     ).toBeVisible({ timeout: 120000 });
     await expect(page.getByText(/^AD-OU$/i).first()).toBeVisible({ timeout: 120000 });
+  });
+
+  test('User creates a new saved configuration', async ({ page }) => {
+    const email = getRequiredEnv('LOGIN_EMAIL');
+    const password = getRequiredEnv('LOGIN_PASSWORD');
+    const configurationName = 'NEW 2';
+
+    await page.goto('https://dev.aqueralabs.com/securehome/endpoints', { waitUntil: 'domcontentloaded' });
+    await fillEmailLogin(page, email, password);
+    await openOperationsCenter(page);
+    await addNewSavedConfiguration(page, configurationName);
+
+    await expect(page.getByText(configurationName, { exact: true }).first()).toBeVisible({ timeout: 120000 });
   });
 });
